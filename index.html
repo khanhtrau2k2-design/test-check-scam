@@ -1,34 +1,32 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Hệ Thống Tra Cứu Tổng Hợp</title>
+    <title>Hệ Thống Tra Cứu Scam</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; text-align: center; padding: 30px; background: #f0f2f5; }
-        .box { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); display: inline-block; width: 90%; max-width: 500px; }
-        h2 { color: #1a73e8; margin-top: 0; }
-        input { padding: 15px; width: 80%; border: 2px solid #ddd; border-radius: 10px; font-size: 16px; margin-bottom: 15px; outline: none; }
-        input:focus { border-color: #1a73e8; }
-        button { padding: 15px 30px; background: #1a73e8; color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; width: 88%; }
-        #status { font-size: 12px; color: #777; margin: 10px 0; }
-        .result-card { text-align: left; margin-top: 20px; padding: 15px; border-radius: 10px; background: #fff; border-left: 5px solid #1a73e8; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .label { font-weight: bold; color: #555; display: block; margin-top: 5px; }
-        .value { color: #000; margin-bottom: 10px; display: block; word-break: break-all; }
-        .no-result { color: #d93025; background: #fce8e6; padding: 15px; border-radius: 10px; margin-top: 20px; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; text-align: center; padding: 20px; background: #f0f2f5; }
+        .box { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); display: inline-block; width: 95%; max-width: 600px; }
+        h2 { color: #d93025; }
+        input { padding: 15px; width: 85%; border: 2px solid #ddd; border-radius: 10px; font-size: 16px; margin-bottom: 10px; }
+        button { padding: 15px; width: 90%; background: #1a73e8; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; }
+        #status { font-size: 12px; color: #888; margin: 10px 0; }
+        .result-item { text-align: left; background: #fff; margin-top: 15px; padding: 15px; border-radius: 10px; border-left: 5px solid #d93025; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .row-data { word-break: break-all; white-space: pre-wrap; margin-bottom: 5px; }
+        .highlight { background: yellow; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div class="box">
-        <h2>🔍 Tra Cứu Dữ Liệu</h2>
-        <input type="text" id="userInput" placeholder="Nhập bất kỳ thông tin nào...">
-        <button onclick="checkInfo()">TÌM KIẾM</button>
-        <div id="status">Đang nạp dữ liệu từ Google Sheets...</div>
+        <h2>🔍 Tra Cứu Scammer</h2>
+        <input type="text" id="userInput" placeholder="Nhập tên, SĐT, STK hoặc bất kỳ từ khóa nào...">
+        <button onclick="checkInfo()">TÌM KIẾM NGAY</button>
+        <div id="status">Đang tải dữ liệu...</div>
         <div id="result"></div>
     </div>
 
     <script>
-        // DÁN LINK CSV CỦA BẠN VÀO ĐÂY
+        // THAY LINK CSV CỦA BẠN VÀO ĐÂY (Đảm bảo đuôi là output=csv)
         const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSGyjVju8kRaAfKTo0lYPBh5frSvP46DIR9Hq3ekhvuqP1gfd_iODMlhYxTMbN-pjDOpjiSPEfcx8ft/pub?gid=0&single=true&output=csv";
 
         let fullData = [];
@@ -36,13 +34,10 @@
         function loadData() {
             Papa.parse(sheetUrl, {
                 download: true,
-                header: true,
+                header: false, // Để false để quét được cả những hàng không có tiêu đề
                 complete: function(results) {
                     fullData = results.data;
-                    document.getElementById("status").innerHTML = "✅ Dữ liệu đã sẵn sàng để tra cứu";
-                },
-                error: function() {
-                    document.getElementById("status").innerHTML = "❌ Lỗi: Không thể tải dữ liệu!";
+                    document.getElementById("status").innerHTML = "✅ Dữ liệu đã sẵn sàng (" + fullData.length + " hàng)";
                 }
             });
         }
@@ -50,35 +45,29 @@
         function checkInfo() {
             const input = document.getElementById("userInput").value.trim().toLowerCase();
             const resultDiv = document.getElementById("result");
-            resultDiv.innerHTML = ""; // Xóa kết quả cũ
-            
+            resultDiv.innerHTML = "";
+
             if (!input) {
-                alert("Vui lòng nhập thông tin cần tìm!");
+                alert("Vui lòng nhập từ khóa!");
                 return;
             }
 
-            // Tìm kiếm trong toàn bộ các cột
+            // Lọc dữ liệu: Tìm trong tất cả các cột của mỗi hàng
             const matches = fullData.filter(row => {
-                return Object.values(row).some(value => 
-                    String(value).toLowerCase().includes(input)
-                );
+                return row.some(cell => String(cell).toLowerCase().includes(input));
             });
 
             if (matches.length > 0) {
-                matches.forEach(item => {
-                    let card = document.createElement("div");
-                    card.className = "result-card";
-                    let content = "";
-                    for (let key in item) {
-                        if(item[key]) {
-                            content += `<span class="label">${key}:</span><span class="value">${item[key]}</span>`;
-                        }
-                    }
-                    card.innerHTML = content;
-                    resultDiv.appendChild(card);
+                matches.forEach(row => {
+                    let div = document.createElement("div");
+                    div.className = "result-item";
+                    // Hiển thị tất cả thông tin trong hàng đó
+                    let content = row.map(cell => cell ? `<div>${cell}</div>` : "").join("");
+                    div.innerHTML = content;
+                    resultDiv.appendChild(div);
                 });
             } else {
-                resultDiv.innerHTML = "<div class='no-result'>❌ Không tìm thấy thông tin trùng khớp!</div>";
+                resultDiv.innerHTML = "<div style='margin-top:20px; color:red;'>❌ Không tìm thấy kết quả nào chứa từ khóa này!</div>";
             }
         }
 
