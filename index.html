@@ -1,86 +1,87 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Check Thông Tin Từ Google Sheets</title>
-    <script src="https://docs.google.com/spreadsheets/d/e/2PACX-1vSGyjVju8kRaAfKTo0lYPBh5frSvP46DIR9Hq3ekhvuqP1gfd_iODMlhYxTMbN-pjDOpjiSPEfcx8ft/pub?gid=0&single=true&output=tsv"></script>
+    <title>Hệ Thống Tra Cứu Tổng Hợp</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 50px; background: #eceff1; }
-        .box { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: inline-block; min-width: 350px; }
-        h2 { color: #2c3e50; margin-bottom: 20px; }
-        input { padding: 12px; width: 280px; border: 2px solid #dfe6e9; border-radius: 8px; margin-bottom: 15px; font-size: 16px; outline: none; transition: 0.3s; }
-        input:focus { border-color: #3498db; }
-        button { padding: 12px 30px; background: #3498db; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; }
-        button:hover { background: #2980b9; }
-        #status { font-size: 12px; color: #95a5a6; margin-top: 10px; }
-        #result { margin-top: 25px; padding: 15px; border-radius: 8px; font-size: 18px; line-height: 1.6; min-height: 50px; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; text-align: center; padding: 30px; background: #f0f2f5; }
+        .box { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); display: inline-block; width: 90%; max-width: 500px; }
+        h2 { color: #1a73e8; margin-top: 0; }
+        input { padding: 15px; width: 80%; border: 2px solid #ddd; border-radius: 10px; font-size: 16px; margin-bottom: 15px; outline: none; }
+        input:focus { border-color: #1a73e8; }
+        button { padding: 15px 30px; background: #1a73e8; color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; width: 88%; }
+        #status { font-size: 12px; color: #777; margin: 10px 0; }
+        .result-card { text-align: left; margin-top: 20px; padding: 15px; border-radius: 10px; background: #fff; border-left: 5px solid #1a73e8; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .label { font-weight: bold; color: #555; display: block; margin-top: 5px; }
+        .value { color: #000; margin-bottom: 10px; display: block; word-break: break-all; }
+        .no-result { color: #d93025; background: #fce8e6; padding: 15px; border-radius: 10px; margin-top: 20px; }
     </style>
 </head>
 <body>
 
     <div class="box">
-        <h2>🔍 Kiểm Chứng Thông Tin</h2>
-        <input type="text" id="userInput" placeholder="Nhập mã hoặc tên cần tìm...">
-        <br>
-        <button onclick="checkInfo()">Kiểm tra ngay</button>
-        <div id="status">Đang kết nối dữ liệu...</div>
+        <h2>🔍 Tra Cứu Dữ Liệu</h2>
+        <input type="text" id="userInput" placeholder="Nhập bất kỳ thông tin nào...">
+        <button onclick="checkInfo()">TÌM KIẾM</button>
+        <div id="status">Đang nạp dữ liệu từ Google Sheets...</div>
         <div id="result"></div>
     </div>
 
     <script>
-        // CHỖ QUAN TRỌNG: Thay link bạn đã copy ở Bước 1 vào giữa dấu ngoặc kép dưới đây
-        const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSGyjVju8kRaAfKTo0lYPBh5frSvP46DIR9Hq3ekhvuqP1gfd_iODMlhYxTMbN-pjDOpjiSPEfcx8ft/pub?output=csv";
+        // DÁN LINK CSV CỦA BẠN VÀO ĐÂY
+        const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSGyjVju8kRaAfKTo0lYPBh5frSvP46DIR9Hq3ekhvuqP1gfd_iODMlhYxTMbN-pjDOpjiSPEfcx8ft/pub?gid=0&single=true&output=csv";
 
-        let database = {};
+        let fullData = [];
 
-        // Hàm tự động lấy dữ liệu từ Google Sheets khi mở web
         function loadData() {
             Papa.parse(sheetUrl, {
                 download: true,
                 header: true,
                 complete: function(results) {
-                    // Xử lý dữ liệu: Cột đầu tiên làm 'Khóa', toàn bộ hàng làm 'Giá trị'
-                    results.data.forEach(row => {
-                        const keys = Object.keys(row);
-                        if (keys.length > 0 && row[keys[0]]) {
-                            let id = row[keys[0]].toString().trim().toUpperCase();
-                            database[id] = row; 
-                        }
-                    });
-                    document.getElementById("status").innerHTML = "✅ Dữ liệu đã cập nhật mới nhất";
+                    fullData = results.data;
+                    document.getElementById("status").innerHTML = "✅ Dữ liệu đã sẵn sàng để tra cứu";
                 },
                 error: function() {
-                    document.getElementById("status").innerHTML = "❌ Lỗi: Không thể kết nối Google Sheets!";
+                    document.getElementById("status").innerHTML = "❌ Lỗi: Không thể tải dữ liệu!";
                 }
             });
         }
 
         function checkInfo() {
-            const input = document.getElementById("userInput").value.trim().toUpperCase();
+            const input = document.getElementById("userInput").value.trim().toLowerCase();
             const resultDiv = document.getElementById("result");
+            resultDiv.innerHTML = ""; // Xóa kết quả cũ
             
             if (!input) {
-                resultDiv.innerHTML = "⚠️ Vui lòng nhập thông tin!";
-                resultDiv.style.color = "#e67e22";
+                alert("Vui lòng nhập thông tin cần tìm!");
                 return;
             }
 
-            if (database[input]) {
-                // Lấy tất cả thông tin trong hàng đó để hiển thị
-                let infoHtml = "<b>Thông tin tìm thấy:</b><br>";
-                for (let key in database[input]) {
-                    infoHtml += `${key}: ${database[input][key]}<br>`;
-                }
-                resultDiv.innerHTML = "✅ " + infoHtml;
-                resultDiv.style.color = "#27ae60";
-                resultDiv.style.background = "#f0fff4";
+            // Tìm kiếm trong toàn bộ các cột
+            const matches = fullData.filter(row => {
+                return Object.values(row).some(value => 
+                    String(value).toLowerCase().includes(input)
+                );
+            });
+
+            if (matches.length > 0) {
+                matches.forEach(item => {
+                    let card = document.createElement("div");
+                    card.className = "result-card";
+                    let content = "";
+                    for (let key in item) {
+                        if(item[key]) {
+                            content += `<span class="label">${key}:</span><span class="value">${item[key]}</span>`;
+                        }
+                    }
+                    card.innerHTML = content;
+                    resultDiv.appendChild(card);
+                });
             } else {
-                resultDiv.innerHTML = "❌ Rất tiếc! Không tìm thấy dữ liệu này.";
-                resultDiv.style.color = "#c0392b";
-                resultDiv.style.background = "#fff5f5";
+                resultDiv.innerHTML = "<div class='no-result'>❌ Không tìm thấy thông tin trùng khớp!</div>";
             }
         }
 
-        // Gọi hàm nạp dữ liệu ngay khi trang web tải xong
         window.onload = loadData;
     </script>
 </body>
