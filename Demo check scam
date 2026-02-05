@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Check Thông Tin Từ Google Sheets</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 50px; background: #eceff1; }
+        .box { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: inline-block; min-width: 350px; }
+        h2 { color: #2c3e50; margin-bottom: 20px; }
+        input { padding: 12px; width: 280px; border: 2px solid #dfe6e9; border-radius: 8px; margin-bottom: 15px; font-size: 16px; outline: none; transition: 0.3s; }
+        input:focus { border-color: #3498db; }
+        button { padding: 12px 30px; background: #3498db; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; }
+        button:hover { background: #2980b9; }
+        #status { font-size: 12px; color: #95a5a6; margin-top: 10px; }
+        #result { margin-top: 25px; padding: 15px; border-radius: 8px; font-size: 18px; line-height: 1.6; min-height: 50px; }
+    </style>
+</head>
+<body>
+
+    <div class="box">
+        <h2>🔍 Kiểm Chứng Thông Tin</h2>
+        <input type="text" id="userInput" placeholder="Nhập mã hoặc tên cần tìm...">
+        <br>
+        <button onclick="checkInfo()">Kiểm tra ngay</button>
+        <div id="status">Đang kết nối dữ liệu...</div>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        // CHỖ QUAN TRỌNG: Thay link bạn đã copy ở Bước 1 vào giữa dấu ngoặc kép dưới đây
+        const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSGyjVju8kRaAfKTo0lYPBh5frSvP46DIR9Hq3ekhvuqP1gfd_iODMlhYxTMbN-pjDOpjiSPEfcx8ft/pub?output=csv";
+
+        let database = {};
+
+        // Hàm tự động lấy dữ liệu từ Google Sheets khi mở web
+        function loadData() {
+            Papa.parse(sheetUrl, {
+                download: true,
+                header: true,
+                complete: function(results) {
+                    // Xử lý dữ liệu: Cột đầu tiên làm 'Khóa', toàn bộ hàng làm 'Giá trị'
+                    results.data.forEach(row => {
+                        const keys = Object.keys(row);
+                        if (keys.length > 0 && row[keys[0]]) {
+                            let id = row[keys[0]].toString().trim().toUpperCase();
+                            database[id] = row; 
+                        }
+                    });
+                    document.getElementById("status").innerHTML = "✅ Dữ liệu đã cập nhật mới nhất";
+                },
+                error: function() {
+                    document.getElementById("status").innerHTML = "❌ Lỗi: Không thể kết nối Google Sheets!";
+                }
+            });
+        }
+
+        function checkInfo() {
+            const input = document.getElementById("userInput").value.trim().toUpperCase();
+            const resultDiv = document.getElementById("result");
+            
+            if (!input) {
+                resultDiv.innerHTML = "⚠️ Vui lòng nhập thông tin!";
+                resultDiv.style.color = "#e67e22";
+                return;
+            }
+
+            if (database[input]) {
+                // Lấy tất cả thông tin trong hàng đó để hiển thị
+                let infoHtml = "<b>Thông tin tìm thấy:</b><br>";
+                for (let key in database[input]) {
+                    infoHtml += `${key}: ${database[input][key]}<br>`;
+                }
+                resultDiv.innerHTML = "✅ " + infoHtml;
+                resultDiv.style.color = "#27ae60";
+                resultDiv.style.background = "#f0fff4";
+            } else {
+                resultDiv.innerHTML = "❌ Rất tiếc! Không tìm thấy dữ liệu này.";
+                resultDiv.style.color = "#c0392b";
+                resultDiv.style.background = "#fff5f5";
+            }
+        }
+
+        // Gọi hàm nạp dữ liệu ngay khi trang web tải xong
+        window.onload = loadData;
+    </script>
+</body>
+</html>
